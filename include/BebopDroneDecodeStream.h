@@ -31,9 +31,11 @@
 #ifndef _SDK_EXAMPLE_BD_H_
 #define _SDK_EXAMPLE_BD_H_
 
+extern "C" {
 #include <ihm.h>
 #include <DecoderManager.h>
 #include <libARCommands/ARCommands.h>
+}
 
 typedef struct
 {

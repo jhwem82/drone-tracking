@@ -2,7 +2,8 @@
 include gmsl
 
 CC := gcc
-CCFLAGS := -Wall
+CXX := g++
+CFLAGS := -Wall
 
 LIBRARIES := \
 	ARSAL \
@@ -31,7 +32,7 @@ LDFLAGS += -lncurses
 
 INCLUDE += -Iinclude/
 
-CCFLAGS += $(INCLUDE)
+CFLAGS += $(INCLUDE)
 
 EXEC := bebop_track
 
@@ -47,12 +48,16 @@ DEPS := $(wildcard $(INC_DIR)/*.h)
 all: obj bin $(BIN_DIR)/$(EXEC)
 
 $(BIN_DIR)/$(EXEC): $(OBJS)
-	@ echo "CC $^ -o $@"
-	@ $(CC) $(CCFLAGS) $^ -o $@ $(LDFLAGS)
+	@ echo "CXX $^ -o $@"
+	@ $(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
 	@ echo "CC -c $< -o $@"
-	@ $(CC) $(CCFLAGS) -c $< -o $@ 
+	@ $(CC) $(CFLAGS) -c $< -o $@ 
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(DEPS)
+	@ echo "CXX -c $< -o $@"
+	@ $(CXX) $(CFLAGS) -c $< -o $@ 
 
 obj: 
 	@ mkdir -p $(OBJ_DIR)

@@ -46,6 +46,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
@@ -56,6 +57,7 @@
 #include <libARNetworkAL/ARNetworkAL.h>
 #include <libARDiscovery/ARDiscovery.h>
 #include <libARStream/ARStream.h>
+}
 
 #include "BebopDroneDecodeStream.h"
 
