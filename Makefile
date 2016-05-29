@@ -28,7 +28,7 @@ LOCAL_INCLUDE := $(LOCAL)/include
 LOCAL_LIBRARY := $(LOCAL)/lib
 INCLUDE += $(shell pkg-config --cflags libavformat libavcodec libswresample libswscale libavutil sdl json)
 LDFLAGS += $(shell pkg-config --libs libavformat libavcodec libavutil libswscale json)
-LDFLAGS += -lncurses
+LDFLAGS += -lncurses -lopencv_imgproc -lopencv_highgui -lopencv_core
 
 INCLUDE += -Iinclude/
 

@@ -47,19 +47,23 @@
 #include <unistd.h>
 #include <signal.h>
 extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-
-#include <libARSAL/ARSAL.h>
-#include <libARSAL/ARSAL_Print.h>
-#include <libARNetwork/ARNetwork.h>
-#include <libARNetworkAL/ARNetworkAL.h>
-#include <libARDiscovery/ARDiscovery.h>
-#include <libARStream/ARStream.h>
+  #include <libavformat/avformat.h>
+  #include <libavcodec/avcodec.h>
+  #include <libavutil/imgutils.h>
+  #include <libswscale/swscale.h>  
+  
+  #include <libARSAL/ARSAL.h>
+  #include <libARSAL/ARSAL_Print.h>
+  #include <libARNetwork/ARNetwork.h>
+  #include <libARNetworkAL/ARNetworkAL.h>
+  #include <libARDiscovery/ARDiscovery.h>
+  #include <libARStream/ARStream.h>
 }
 
 #include "BebopDroneDecodeStream.h"
+
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 /*****************************************
  *
@@ -83,8 +87,8 @@ extern "C" {
 #define BD_NET_DC_VIDEO_FRAG_SIZE 65000
 #define BD_NET_DC_VIDEO_MAX_NUMBER_OF_FRAG 4
 
-#define BD_RAW_FRAME_BUFFER_SIZE 50
-#define BD_RAW_FRAME_POOL_SIZE 50
+#define BD_RAW_FRAME_BUFFER_SIZE 100
+#define BD_RAW_FRAME_POOL_SIZE 100
 
 #define ERROR_STR_LENGTH 2048
 
@@ -318,38 +322,34 @@ void* Decode_RunDataThread(void *customData)
 
             if (decodedFrame != NULL)
             {
-                //ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Frame has been decoded ");
+                ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Frame has been decoded ");
 
                 // this part is only needed to copy the YUV frame into the file
                 int pic_size = avpicture_get_size(AV_PIX_FMT_YUV420P, decodedFrame->width, decodedFrame->height);
-
                 uint8_t *decodedOut = (uint8_t*) malloc(pic_size);
-
-                // in case your install of FFMpeg supports av_image_copy_to_buffer, you can replace the AVFrame creation and initialisation by this block
-                /*uint8_t *src_data[4];
-                src_data[0] = decodedFrame->componentArray[0].data;
-                src_data[1] = decodedFrame->componentArray[1].data;
-                src_data[2] = decodedFrame->componentArray[2].data;
-                src_data[3] = NULL;
-                
-                int src_linesize[4];
-                src_linesize[0] = decodedFrame->componentArray[0].lineSize;
-                src_linesize[1] = decodedFrame->componentArray[1].lineSize;
-                src_linesize[2] = decodedFrame->componentArray[2].lineSize;
-                src_linesize[3] = 0;
-                
-                av_image_copy_to_buffer(decodedOut, pic_size,
-                                        (const uint8_t *const *)src_data, src_linesize,
-                                        AV_PIX_FMT_YUV420P, decodedFrame->width, decodedFrame->height, 1);*/
-                
                 AVFrame *avFrame = av_frame_alloc();
-                if (avFrame != NULL)
+
+                // Buffer and AVFrame for OpenCV
+                uint8_t *buffer = (uint8_t*) malloc(buf_size);
+                int buf_size = avpicture_get_size(AV_PIX_FMT_BGR24, decodedFrame->width, decodedFrame->height);
+                AVFrame *av_frame_BGR = av_frame_alloc();
+                if (avFrame != NULL && av_frame_BGR != NULL)
                 {
                     avFrame->width = decodedFrame->width;
                     avFrame->height = decodedFrame->height;
                     avFrame->format = AV_PIX_FMT_YUV420P;
 
-                    avpicture_fill((AVPicture*)avFrame, NULL, AV_PIX_FMT_YUV420P, decodedFrame->width, decodedFrame->height);
+                    av_frame_BGR->width  = decodedFrame->width;
+                    av_frame_BGR->height = decodedFrame->height;
+                    av_frame_BGR->format = AV_PIX_FMT_BGR24;
+
+                    avpicture_fill((AVPicture*)avFrame, NULL, AV_PIX_FMT_YUV420P, 
+                        decodedFrame->width, decodedFrame->height);
+
+                    // buffer should not be NULL
+                    avpicture_fill((AVPicture*)av_frame_BGR, buffer, AV_PIX_FMT_BGR24, 
+                        decodedFrame->width, decodedFrame->height);
+               
                     avFrame->linesize[0] = decodedFrame->componentArray[0].lineSize;
                     avFrame->linesize[1] = decodedFrame->componentArray[1].lineSize;
                     avFrame->linesize[2] = decodedFrame->componentArray[2].lineSize;
@@ -358,8 +358,41 @@ void* Decode_RunDataThread(void *customData)
                     avFrame->data[1] = decodedFrame->componentArray[1].data;
                     avFrame->data[2] = decodedFrame->componentArray[2].data;
 
-                    avpicture_layout((AVPicture*)avFrame, AV_PIX_FMT_YUV420P, decodedFrame->width, decodedFrame->height, decodedOut, pic_size);
+                    ARSAL_Mutex_Lock (&(deviceManager->mutex));
+                    if (deviceManager->fifoReadIdx == 0) {
+                      // convert decoded YUV480P frame to BGR24 frame
+                      struct SwsContext *sws_ctx = 
+                        sws_getContext(
+                            avFrame->width,
+                            avFrame->height,
+                            (enum AVPixelFormat) avFrame->format,
+                            av_frame_BGR->width,
+                            av_frame_BGR->height,
+                            (enum AVPixelFormat) av_frame_BGR->format,
+                            SWS_BILINEAR, NULL, NULL, NULL);
+                      sws_scale(sws_ctx, (uint8_t const * const *)avFrame->data, avFrame->linesize, 0, 
+                          av_frame_BGR->height, av_frame_BGR->data, av_frame_BGR->linesize);
+                      // Then write the image to file system
+                      cv::Mat *img = 
+                        new cv::Mat(av_frame_BGR->height, av_frame_BGR->width, CV_8UC3, av_frame_BGR->data[0]);
+                      cv::imwrite("lastframe.png", *img);
+                      // Free the image and the context
+                      delete img;
+                      sws_freeContext(sws_ctx);
+                    }
+                    ARSAL_Mutex_Unlock (&(deviceManager->mutex));
+
+                    avpicture_layout(
+                        (AVPicture*)avFrame, 
+                        AV_PIX_FMT_YUV420P, 
+                        decodedFrame->width, 
+                        decodedFrame->height, 
+                        decodedOut, 
+                        pic_size);
+
+                    // Final free
                     av_frame_free(&avFrame);
+                    av_frame_free(&av_frame_BGR);
                 }
 
                 if (decodedOut != NULL)
