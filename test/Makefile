@@ -8,24 +8,25 @@ EXE := test_ffmpeg
 CC := gcc
 CXX := g++
 CFLAGS := $(shell pkg-config --cflags libavformat libavcodec libswresample libswscale libavutil sdl)
-CFLAGS += -Wall
+CFLAGS += -Wall -Qunused-arguments
 
-LDFLAGS := $(shell pkg-config --libs libavformat libavcodec libavutil libswscale)
+LDFLAGS := $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lopencv_highgui -lopencv_imgproc -lopencv_core
 
 all: dirs $(addprefix bin/, $(EXE))
+
+bin/%: obj/%.o
+	@ echo "CXX $^ -o $@"
+	@ $(CXX) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
+obj/%.o: %.cc
+	@ echo "CXX -c $< -o $@"
+	@ $(CXX) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
+
+.PHONY: dirs clean
 
 dirs: 
 	@ mkdir -p obj
 	@ mkdir -p bin
 
-bin/%: %.o
-	@ echo "CC $@"
-	@ $(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
-
-obj/%.o: %.c
-	@ echo "CC $@"
-	@ $(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
-
-.PHONY: clean
 clean: 
 	rm -rf bin obj

@@ -1,0 +1,134 @@
+clang: warning: -lavformat: 'linker' input unused
+clang: warning: -framework QTKit: 'linker' input unusedclang: warning: -lavformat: 'linker' input unused
+clang: warning: -framework QTKit: 'linker' input unused
+clang: warning: -framework Foundation: 'linker' input unused
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreVideo: 'linker' input unused
+clang: warning: -framework Foundation: 'linker' input unused
+clang: warning: -framework AVFoundation: 'linker' input unused
+clang: warning: -framework CoreMedia: 'linker' input unused
+clang: warning: 
+clang: warning: -framework Foundation: 'linker' input unused
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreVideo: 'linker' input unused
+clang: warning: -framework Foundation: 'linker' input unused
+clang: warning: -framework AVFoundation: 'linker' input unused
+clang: warning: -framework CoreMedia: 'linker' input unused
+clang: warning: -framework CoreFoundation: 'linker' input unused
+-framework CoreFoundation: 'linker' input unused
+clang: warning: clang: warning: -framework VideoToolbox: 'linker' input unused
+clang: -framework VideoToolbox: 'linker' input unused
+clang: warning: -framework CoreMedia: 'linker' input unused
+warning: -framework CoreMedia: 'linker' input unused
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: warning: clang: warning: -framework CoreServices: 'linker' input unused
+clang: -framework CoreServices: 'linker' input unused
+clang: warning: -framework CoreFoundation: 'linker' input unused
+warning: -framework CoreFoundation: 'linker' input unused
+clang: warning: -framework VideoDecodeAcceleration: 'linker' input unusedclang: warning: -framework VideoDecodeAcceleration: 'linker' input unused
+clang: warning
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreServices: 'linker' input unused
+: warning: -framework CoreServices: 'linker' input unused
+clang: warning: -liconv: 'linker' input unusedclang: warning: -liconv: 'linker' input unused
+clang: 
+clang: warning: warning: -Wl,-framework,CoreFoundation: 'linker' input unused
+clang-Wl,-framework,CoreFoundation: 'linker' input unused
+clang: warning: -Wl,-framework,Security: 'linker' input unused
+: warning: -Wl,-framework,Security: 'linker' input unused
+clang: warning: -lSDLmain: 'linker' input unusedclang: warning: -lSDLmain: 'linker' input unused
+clang: warning
+clang: warning: -lSDL: 'linker' input unused
+clang: -lSDL: 'linker' input unused
+clang: warning: -Wl,-framework,Cocoa: 'linker' input unused
+: warning: -Wl,-framework,Cocoa: 'linker' input unused
+clang: warning: -framework CoreGraphics: 'linker' input unusedclang: warning: -framework CoreGraphics: 'linker' input unused
+clang: warning
+clang: warning: -lm: 'linker' input unused: -lm: 'linker' input unused
+clang: warning
+clang: warning: -lbz2: 'linker' input unused: -lbz2: 'linker' input unused
+clang: warning
+clang: warning: -lz: 'linker' input unused
+clang: -lz: 'linker' input unused
+clang: warning: : warning: -lavcodec: 'linker' input unused
+clang-lavcodec: 'linker' input unused
+clang: warning: -framework QTKit: 'linker' input unused
+: warning: -framework QTKit: 'linker' input unused
+clang: warning: -framework Foundation: 'linker' input unusedclang: warning: -framework Foundation: 'linker' input unused
+clang: warning
+clang: warning: -framework QuartzCore: 'linker' input unused
+clang: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreVideo: 'linker' input unused
+: warning: -framework CoreVideo: 'linker' input unused
+clang: warning: -framework Foundation: 'linker' input unusedclang: warning: -framework Foundation: 'linker' input unused
+clang: warning
+clang: warning: -framework AVFoundation: 'linker' input unused
+clang: -framework AVFoundation: 'linker' input unused
+clang: warning: -framework CoreMedia: 'linker' input unused
+: warning: -framework CoreMedia: 'linker' input unused
+clang: warning: -framework CoreFoundation: 'linker' input unusedclang: warning: -framework CoreFoundation: 'linker' input unused
+clang: warning: -framework VideoToolbox: 'linker' input unused
+clang: warning: 
+clang: warning: -framework VideoToolbox: 'linker' input unused
+clang: warning: -framework CoreMedia: 'linker' input unused
+-framework CoreMedia: 'linker' input unused
+clang: warning: clang: warning: -framework QuartzCore: 'linker' input unused
+clang: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreServices: 'linker' input unused
+warning: -framework CoreServices: 'linker' input unused
+clang: warning: -framework CoreFoundation: 'linker' input unused
+clang: warning: -framework CoreFoundation: 'linker' input unused
+clang: warning: clang: warning: -framework VideoDecodeAcceleration: 'linker' input unused
+clang: -framework VideoDecodeAcceleration: 'linker' input unused
+clang: warning: warning: -framework QuartzCore: 'linker' input unused
+clang: -framework QuartzCore: 'linker' input unused
+clang: warning: -framework CoreServices: 'linker' input unused
+warning: -framework CoreServices: 'linker' input unused
+clang: warning: -liconv: 'linker' input unused
+clang: warning: -liconv: 'linker' input unused
+clang: warning: clang: warning: -Wl,-framework,CoreFoundation: 'linker' input unused
+clang: -Wl,-framework,CoreFoundation: 'linker' input unused
+clang: warning: -Wl,-framework,Security: 'linker' input unused
+warning: -Wl,-framework,Security: 'linker' input unused
+clang: warningclang: warning: -lSDLmain: 'linker' input unused
+: -lSDLmain: 'linker' input unused
+clang: warning: -lSDL: 'linker' input unused
+clang: warning: -lSDL: 'linker' input unused
+clang: warning: clang: warning: -Wl,-framework,Cocoa: 'linker' input unused
+-Wl,-framework,Cocoa: 'linker' input unused
+clang: warning: clang: warning: -framework CoreGraphics: 'linker' input unused
+clang: -framework CoreGraphics: 'linker' input unused
+clang: warning: warning: -lm: 'linker' input unused
+clang: warning-lm: 'linker' input unused
+clang: warning: -lbz2: 'linker' input unused
+clang: : -lbz2: 'linker' input unused
+clang: warning: -lz: 'linker' input unused
+warning: -lz: 'linker' input unused
+clang: warningclang: warning: -lswresample: 'linker' input unused
+clang: -lswresample: 'linker' input unused
+clang: warning: -lm: 'linker' input unused
+: warning: -lm: 'linker' input unused
+clang: warning: -lswscale: 'linker' input unused
+clang: warning: -lm: 'linker' input unused
+clang: warning: -lswscale: 'linker' input unused
+clang: warning: -lm: 'linker' input unused
+clang: warning: -lavutil: 'linker' input unused
+clang: warning: -lavutil: 'linker' input unused
+clang: warning: -lm: 'linker' input unusedclang: warning: -lm: 'linker' input unused
+
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-L/usr/local/lib'
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-L/usr/local/lib'
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-L/usr/local/lib'
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-L/usr/local/lib'
+clang: warning: argument unused during compilation: '-L/Users/vincent/coding/projects/drone/local/lib'
+clang: warning: argument unused during compilation: '-pthread'
+clang: warning: clang: warning: argument unused during compilation: '-pthread'
+clang: warning: argument unused during compilation: '-pthread'
+argument unused during compilation: '-pthread'

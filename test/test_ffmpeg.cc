@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
-#include <cv.h>
-#include <highgui.h>
+}
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 int main(int argc, char *argv[]) {
   int c;
@@ -128,6 +130,10 @@ int main(int argc, char *argv[]) {
             av_codec_ctx->height,
             av_frame_RGB->data,
             av_frame_RGB->linesize);
+
+        cv::Mat img(av_frame->height, av_frame->width,CV_8UC3, av_frame_RGB->data[0]); //dst->data[0]);
+        cv::imshow("display",img);
+        cvWaitKey(1);
       }
     }
   }
