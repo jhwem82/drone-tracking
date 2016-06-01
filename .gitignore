@@ -33,3 +33,8 @@
 
 bin/
 obj/
+archive/
+logs/
+frame*
+*.log
+*.png

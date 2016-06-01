@@ -61,6 +61,9 @@ extern "C" {
 }
 
 #include "BebopDroneDecodeStream.h"
+#include "UAVControl.h"
+
+#define LOG_FILE "decode.log"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -302,6 +305,8 @@ void* Decode_RunDataThread(void *customData)
     BD_MANAGER_t *deviceManager = (BD_MANAGER_t *)customData;
     eARCODECS_ERROR error;
     ARCODECS_Manager_Frame_t *decodedFrame = NULL;
+    FILE *fp = fopen(LOG_FILE, "a+");
+    int frame_count = 0;
     while (!deviceManager->decodingCanceled)
     {
         ARSAL_Mutex_Lock (&(deviceManager->mutex));
@@ -330,8 +335,8 @@ void* Decode_RunDataThread(void *customData)
                 AVFrame *avFrame = av_frame_alloc();
 
                 // Buffer and AVFrame for OpenCV
-                uint8_t *buffer = (uint8_t*) malloc(buf_size);
                 int buf_size = avpicture_get_size(AV_PIX_FMT_BGR24, decodedFrame->width, decodedFrame->height);
+                uint8_t *buffer = (uint8_t*) malloc(buf_size);
                 AVFrame *av_frame_BGR = av_frame_alloc();
                 if (avFrame != NULL && av_frame_BGR != NULL)
                 {
@@ -374,8 +379,60 @@ void* Decode_RunDataThread(void *customData)
                           av_frame_BGR->height, av_frame_BGR->data, av_frame_BGR->linesize);
                       // Then write the image to file system
                       cv::Mat *img = 
-                        new cv::Mat(av_frame_BGR->height, av_frame_BGR->width, CV_8UC3, av_frame_BGR->data[0]);
+                        new cv::Mat(av_frame_BGR->height, av_frame_BGR->width, 
+                            CV_8UC3, av_frame_BGR->data[0]);
                       cv::imwrite("lastframe.png", *img);
+                      int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 50);
+                      switch (op) {
+                        case OP_STAY:
+                          printf("STAY\n");
+                          break;
+                        case OP_FORWARD:
+                          printf("FORWARD\n");
+                          if (deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.pitch = 50;
+                          }
+                          break;
+                        case OP_BACKWARD:
+                          printf("BACKWARD\n");
+                          if (deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.pitch = -50;
+                          }
+                          break;
+                        case OP_TURNLEFT:
+                          printf("TURNLEFT\n");
+                          if(deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.roll = -50;
+                          }
+                          break;
+                        case OP_TURNRIGHT:
+                          printf("TURNRIGHT\n");
+                          if(deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.roll = 50;
+                          }
+                          break;
+                        case OP_UPWARD:
+                          printf("UPWARD\n");
+                          if(deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.gaz = 50;
+                          }
+                          break;
+                        case OP_DOWNWARD:
+                          printf("DOWNWARD\n");
+                          if(deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 1;
+                            deviceManager->dataPCMD.gaz = -50;
+                          }
+                          break;
+                        default:
+                          fprintf(stderr, "Cannot recognise op code %d\n", op);
+                          exit(1);
+                      }
                       // Free the image and the context
                       delete img;
                       sws_freeContext(sws_ctx);
@@ -411,6 +468,7 @@ void* Decode_RunDataThread(void *customData)
         }
     }
 
+    fclose(fp);
     return (void*)0;
 }
 

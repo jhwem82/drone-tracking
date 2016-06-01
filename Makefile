@@ -32,6 +32,14 @@ LDFLAGS += -lncurses -lopencv_imgproc -lopencv_highgui -lopencv_core
 
 INCLUDE += -Iinclude/
 
+UAV_CONTROL_DIR := ./uavControl
+UAV_CONTROL_INC_DIR := $(UAV_CONTROL_DIR)/include
+UAV_CONTROL_LIB_DIR := $(UAV_CONTROL_DIR)/lib
+UAV_CONTROL_LIB_NAME := UAVControl
+
+INCLUDE += -I$(UAV_CONTROL_INC_DIR)
+LDFLAGS += -L$(UAV_CONTROL_LIB_DIR) -l$(UAV_CONTROL_LIB_NAME)
+
 CFLAGS += $(INCLUDE)
 
 EXEC := bebop_track

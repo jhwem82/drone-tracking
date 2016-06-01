@@ -1,0 +1,3 @@
+[submodule "uavControl"]
+	path = uavControl
+	url = https://github.com/morningsyj/uavControl.git
