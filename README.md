@@ -19,3 +19,16 @@ Install
 
 Simply `make`. `drone-tracking` will be built.
 
+Do this before running `make`
+```
+export LD_LIBRARY_PATH=./uavControl/lib:$DYLD_LIBRARY_PATH
+```
+
+### UAVControl
+
+UAVControl is a independent algorithm library, so you need to sync the submodule `uavControl` and compile it.
+Then add the built library path to the system PATH
+
+```
+export DYLD_LIBRARY_PATH=./uavControl/lib:$DYLD_LIBRARY_PATH
+```

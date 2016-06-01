@@ -306,7 +306,7 @@ void* Decode_RunDataThread(void *customData)
     eARCODECS_ERROR error;
     ARCODECS_Manager_Frame_t *decodedFrame = NULL;
     FILE *fp = fopen(LOG_FILE, "a+");
-    int frame_count = 0;
+    // int frame_count = 0;
     while (!deviceManager->decodingCanceled)
     {
         ARSAL_Mutex_Lock (&(deviceManager->mutex));
@@ -385,45 +385,45 @@ void* Decode_RunDataThread(void *customData)
                       int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 50);
                       switch (op) {
                         case OP_STAY:
-                          printf("STAY\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : STAY");
                           break;
                         case OP_FORWARD:
-                          printf("FORWARD\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : FORWARD");
                           if (deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.pitch = 50;
                           }
                           break;
                         case OP_BACKWARD:
-                          printf("BACKWARD\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : BACKWARD");
                           if (deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.pitch = -50;
                           }
                           break;
                         case OP_TURNLEFT:
-                          printf("TURNLEFT\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNLEFT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.roll = -50;
                           }
                           break;
                         case OP_TURNRIGHT:
-                          printf("TURNRIGHT\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNRIGHT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.roll = 50;
                           }
                           break;
                         case OP_UPWARD:
-                          printf("UPWARD\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : UPWARD");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.gaz = 50;
                           }
                           break;
                         case OP_DOWNWARD:
-                          printf("DOWNWARD\n");
+                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : DOWNWARD");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
                             deviceManager->dataPCMD.gaz = -50;
