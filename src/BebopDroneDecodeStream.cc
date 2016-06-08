@@ -87,11 +87,11 @@ extern "C" {
 #define BD_NET_DC_EVENT_ID 126
 #define BD_NET_DC_VIDEO_DATA_ID 125
 
-#define BD_NET_DC_VIDEO_FRAG_SIZE 65000
+#define BD_NET_DC_VIDEO_FRAG_SIZE 61000
 #define BD_NET_DC_VIDEO_MAX_NUMBER_OF_FRAG 4
 
-#define BD_RAW_FRAME_BUFFER_SIZE 100
-#define BD_RAW_FRAME_POOL_SIZE 100
+#define BD_RAW_FRAME_BUFFER_SIZE 50
+#define BD_RAW_FRAME_POOL_SIZE 50
 
 #define ERROR_STR_LENGTH 2048
 
@@ -147,7 +147,7 @@ static ARNETWORK_IOBufferParam_t c2dParams[] = {
         .ID = BD_NET_CD_ACK_ID,
         .dataType = ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK,
         .sendingWaitTimeMs = 20,
-        .ackTimeoutMs = 500,
+        .ackTimeoutMs = 100,
         .numberOfRetry = 3,
         .numberOfCell = 20,
         .dataCopyMaxSize = 128,
@@ -193,7 +193,7 @@ static ARNETWORK_IOBufferParam_t d2cParams[] = {
         .ID = BD_NET_DC_EVENT_ID,
         .dataType = ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK,
         .sendingWaitTimeMs = 20,
-        .ackTimeoutMs = 500,
+        .ackTimeoutMs = 100,
         .numberOfRetry = 3,
         .numberOfCell = 20,
         .dataCopyMaxSize = 128,
@@ -305,7 +305,6 @@ void* Decode_RunDataThread(void *customData)
     BD_MANAGER_t *deviceManager = (BD_MANAGER_t *)customData;
     eARCODECS_ERROR error;
     ARCODECS_Manager_Frame_t *decodedFrame = NULL;
-    FILE *fp = fopen(LOG_FILE, "a+");
     // int frame_count = 0;
     while (!deviceManager->decodingCanceled)
     {
@@ -364,7 +363,7 @@ void* Decode_RunDataThread(void *customData)
                     avFrame->data[2] = decodedFrame->componentArray[2].data;
 
                     ARSAL_Mutex_Lock (&(deviceManager->mutex));
-                    if (deviceManager->fifoReadIdx == 0) {
+                    if (deviceManager->fifoReadIdx % 10 == 0) {
                       // convert decoded YUV480P frame to BGR24 frame
                       struct SwsContext *sws_ctx = 
                         sws_getContext(
@@ -382,57 +381,66 @@ void* Decode_RunDataThread(void *customData)
                         new cv::Mat(av_frame_BGR->height, av_frame_BGR->width, 
                             CV_8UC3, av_frame_BGR->data[0]);
                       cv::imwrite("lastframe.png", *img);
-                      int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 50);
+                      // int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 10);
+                      int op = fromFaceFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 20);
                       switch (op) {
                         case OP_STAY:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : STAY");
+                          if (deviceManager != NULL) {
+                            deviceManager->dataPCMD.flag = 0;
+                            deviceManager->dataPCMD.roll = 0;
+                            deviceManager->dataPCMD.pitch = 0;
+                            deviceManager->dataPCMD.yaw = 0;
+                            deviceManager->dataPCMD.gaz = 0;
+                          } 
                           break;
                         case OP_FORWARD:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : FORWARD");
                           if (deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.pitch = 50;
+                            deviceManager->dataPCMD.pitch = 10;
                           }
                           break;
                         case OP_BACKWARD:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : BACKWARD");
                           if (deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.pitch = -50;
+                            deviceManager->dataPCMD.pitch = -10;
                           }
                           break;
                         case OP_TURNLEFT:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNLEFT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = -50;
+                            deviceManager->dataPCMD.roll = -10;
                           }
                           break;
                         case OP_TURNRIGHT:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNRIGHT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = 50;
+                            deviceManager->dataPCMD.roll = 10;
                           }
                           break;
                         case OP_UPWARD:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : UPWARD");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.gaz = 50;
+                            deviceManager->dataPCMD.gaz = 10;
                           }
                           break;
                         case OP_DOWNWARD:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : DOWNWARD");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.gaz = -50;
+                            deviceManager->dataPCMD.gaz = -10;
                           }
                           break;
                         default:
                           fprintf(stderr, "Cannot recognise op code %d\n", op);
                           exit(1);
                       }
+                      sendPCMD(deviceManager);
                       // Free the image and the context
                       delete img;
                       sws_freeContext(sws_ctx);
@@ -467,8 +475,6 @@ void* Decode_RunDataThread(void *customData)
             ARSAL_Mutex_Unlock (&(deviceManager->mutex));
         }
     }
-
-    fclose(fp);
     return (void*)0;
 }
 
@@ -485,7 +491,7 @@ static void *looperRun (void* data)
 
             sendCameraOrientation(deviceManager);
 
-            usleep(50000);
+            usleep(10000);
         }
     }
 
@@ -744,7 +750,7 @@ int main (int argc, char *argv[])
 
         while (gIHMRun)
         {
-            usleep(50);
+            usleep(10);
         }
 
         IHM_PrintInfo(deviceManager->ihm, (char *) "Disconnecting ...");
@@ -1428,10 +1434,10 @@ void flyingStateChangedCallback (eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATEC
             IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : taking off");
             break;
         case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-            IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : hovering");
+            // IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : hovering");
             break;
         case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
-            IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : flying");
+            // IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : flying");
             break;
         case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDING:
             IHM_PrintInfo(deviceManager->ihm, (char *) "Flying state : landing");
@@ -1752,52 +1758,52 @@ void onInputEvent (eIHM_INPUT_EVENT event, void *customData)
         if(deviceManager != NULL)
         {
             deviceManager->dataPCMD.flag = 1;
-            deviceManager->dataPCMD.pitch = 50;
+            deviceManager->dataPCMD.pitch = 10;
         }
         break;
     case IHM_INPUT_EVENT_BACK:
         if(deviceManager != NULL)
         {
             deviceManager->dataPCMD.flag = 1;
-            deviceManager->dataPCMD.pitch = -50;
+            deviceManager->dataPCMD.pitch = -10;
         }
         break;
     case IHM_INPUT_EVENT_RIGHT:
         if(deviceManager != NULL)
         {
             deviceManager->dataPCMD.flag = 1;
-            deviceManager->dataPCMD.roll = 50;
+            deviceManager->dataPCMD.roll = 10;
         }
         break;
     case IHM_INPUT_EVENT_LEFT:
         if(deviceManager != NULL)
         {
             deviceManager->dataPCMD.flag = 1;
-            deviceManager->dataPCMD.roll = -50;
+            deviceManager->dataPCMD.roll = -10;
         }
         break;
     case IHM_INPUT_EVENT_YAW_RIGHT:
         if(deviceManager != NULL)
         {
-            deviceManager->dataPCMD.yaw = 50;
+            deviceManager->dataPCMD.yaw = 10;
         }
         break;
     case IHM_INPUT_EVENT_YAW_LEFT:
         if(deviceManager != NULL)
         {
-            deviceManager->dataPCMD.yaw = -50;
+            deviceManager->dataPCMD.yaw = -10;
         }
         break;
     case IHM_INPUT_EVENT_UP:
         if(deviceManager != NULL)
         {
-            deviceManager->dataPCMD.gaz = 50;
+            deviceManager->dataPCMD.gaz = 10;
         }
         break;
     case IHM_INPUT_EVENT_DOWN:
         if(deviceManager != NULL)
         {
-            deviceManager->dataPCMD.gaz = -50;
+            deviceManager->dataPCMD.gaz = -10;
         }
         break;
     case IHM_INPUT_EVENT_CAM_UP:
@@ -1843,11 +1849,11 @@ void onInputEvent (eIHM_INPUT_EVENT event, void *customData)
     case IHM_INPUT_EVENT_NONE:
         if(deviceManager != NULL)
         {
-            deviceManager->dataPCMD.flag = 0;
-            deviceManager->dataPCMD.roll = 0;
-            deviceManager->dataPCMD.pitch = 0;
-            deviceManager->dataPCMD.yaw = 0;
-            deviceManager->dataPCMD.gaz = 0;
+        //    deviceManager->dataPCMD.flag = 0;
+        //    deviceManager->dataPCMD.roll = 0;
+        //    deviceManager->dataPCMD.pitch = 0;
+        //    deviceManager->dataPCMD.yaw = 0;
+        //    deviceManager->dataPCMD.gaz = 0;
         }
         break;
     default:
