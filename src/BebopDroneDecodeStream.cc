@@ -1,4 +1,5 @@
 /*
+    ARSAL_Mutex_Unlock (&(deviceManager->mutex));
   Copyright (C) 2014 Parrot SA
 
   Redistribution and use in source and binary forms, with or without
@@ -61,7 +62,7 @@ extern "C" {
 }
 
 #include "BebopDroneDecodeStream.h"
-#include "UAVControl.h"
+#include "BebopUAVControl.h"
 
 #define LOG_FILE "decode.log"
 
@@ -90,8 +91,8 @@ extern "C" {
 #define BD_NET_DC_VIDEO_FRAG_SIZE 61000
 #define BD_NET_DC_VIDEO_MAX_NUMBER_OF_FRAG 4
 
-#define BD_RAW_FRAME_BUFFER_SIZE 50
-#define BD_RAW_FRAME_POOL_SIZE 50
+#define BD_RAW_FRAME_BUFFER_SIZE 200
+#define BD_RAW_FRAME_POOL_SIZE 200
 
 #define ERROR_STR_LENGTH 2048
 
@@ -114,6 +115,8 @@ void addFreeRawFrameToFifo(BD_MANAGER_t *deviceManager, RawFrame_t *rawFrame);
 void flushFifo(BD_MANAGER_t *deviceManager);
 void putRawFrameBackToPool(BD_MANAGER_t *deviceManager, int fifoIdx);
 RawFrame_t *getFrameFromData(BD_MANAGER_t *deviceManager, uint8_t *data);
+// shared by all threads
+cv::Mat *img = NULL;
 /**
  * @brief Component of a frame.
  */
@@ -333,25 +336,13 @@ void* Decode_RunDataThread(void *customData)
                 uint8_t *decodedOut = (uint8_t*) malloc(pic_size);
                 AVFrame *avFrame = av_frame_alloc();
 
-                // Buffer and AVFrame for OpenCV
-                int buf_size = avpicture_get_size(AV_PIX_FMT_BGR24, decodedFrame->width, decodedFrame->height);
-                uint8_t *buffer = (uint8_t*) malloc(buf_size);
-                AVFrame *av_frame_BGR = av_frame_alloc();
-                if (avFrame != NULL && av_frame_BGR != NULL)
+                if (avFrame != NULL)
                 {
                     avFrame->width = decodedFrame->width;
                     avFrame->height = decodedFrame->height;
                     avFrame->format = AV_PIX_FMT_YUV420P;
 
-                    av_frame_BGR->width  = decodedFrame->width;
-                    av_frame_BGR->height = decodedFrame->height;
-                    av_frame_BGR->format = AV_PIX_FMT_BGR24;
-
                     avpicture_fill((AVPicture*)avFrame, NULL, AV_PIX_FMT_YUV420P, 
-                        decodedFrame->width, decodedFrame->height);
-
-                    // buffer should not be NULL
-                    avpicture_fill((AVPicture*)av_frame_BGR, buffer, AV_PIX_FMT_BGR24, 
                         decodedFrame->width, decodedFrame->height);
                
                     avFrame->linesize[0] = decodedFrame->componentArray[0].lineSize;
@@ -362,90 +353,20 @@ void* Decode_RunDataThread(void *customData)
                     avFrame->data[1] = decodedFrame->componentArray[1].data;
                     avFrame->data[2] = decodedFrame->componentArray[2].data;
 
-                    ARSAL_Mutex_Lock (&(deviceManager->mutex));
-                    if (deviceManager->fifoReadIdx % 10 == 0) {
-                      // convert decoded YUV480P frame to BGR24 frame
-                      struct SwsContext *sws_ctx = 
-                        sws_getContext(
-                            avFrame->width,
-                            avFrame->height,
-                            (enum AVPixelFormat) avFrame->format,
-                            av_frame_BGR->width,
-                            av_frame_BGR->height,
-                            (enum AVPixelFormat) av_frame_BGR->format,
-                            SWS_BILINEAR, NULL, NULL, NULL);
-                      sws_scale(sws_ctx, (uint8_t const * const *)avFrame->data, avFrame->linesize, 0, 
-                          av_frame_BGR->height, av_frame_BGR->data, av_frame_BGR->linesize);
-                      // Then write the image to file system
-                      cv::Mat *img = 
-                        new cv::Mat(av_frame_BGR->height, av_frame_BGR->width, 
-                            CV_8UC3, av_frame_BGR->data[0]);
-                      cv::imwrite("lastframe.png", *img);
-                      // int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 10);
-                      int op = fromFaceFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 20);
-                      switch (op) {
-                        case OP_STAY:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : STAY");
-                          if (deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 0;
-                            deviceManager->dataPCMD.roll = 0;
-                            deviceManager->dataPCMD.pitch = 0;
-                            deviceManager->dataPCMD.yaw = 0;
-                            deviceManager->dataPCMD.gaz = 0;
-                          } 
-                          break;
-                        case OP_FORWARD:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : FORWARD");
-                          if (deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.pitch = 10;
-                          }
-                          break;
-                        case OP_BACKWARD:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : BACKWARD");
-                          if (deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.pitch = -10;
-                          }
-                          break;
-                        case OP_TURNLEFT:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNLEFT");
-                          if(deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = -10;
-                          }
-                          break;
-                        case OP_TURNRIGHT:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNRIGHT");
-                          if(deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = 10;
-                          }
-                          break;
-                        case OP_UPWARD:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : UPWARD");
-                          if(deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.gaz = 10;
-                          }
-                          break;
-                        case OP_DOWNWARD:
-                          IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : DOWNWARD");
-                          if(deviceManager != NULL) {
-                            deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.gaz = -10;
-                          }
-                          break;
-                        default:
-                          fprintf(stderr, "Cannot recognise op code %d\n", op);
-                          exit(1);
-                      }
-                      sendPCMD(deviceManager);
-                      // Free the image and the context
+                    // output refresh the frame. need a Mutex to lock img operation
+                    // ARSAL_Mutex_Lock (&(deviceManager->mutex));
+                    if (img != NULL)
                       delete img;
-                      sws_freeContext(sws_ctx);
+                    img = getCVMatFromAVVideoFrame(avFrame, decodedFrame->width, decodedFrame->height);
+                    IHM_PrintInfo(deviceManager->ihm, (char *) "Decoded");
+                    // ARSAL_Mutex_Unlock (&(deviceManager->mutex));
+                    if (deviceManager->fifoReadIdx % 10 == 0) {
+#if 0
+                      // int op = fromFrameToOp(*img, av_frame_BGR->width, av_frame_BGR->height, 10);
+                      sendPCMD(deviceManager);
+#endif
+                      // Free the image and the context
                     }
-                    ARSAL_Mutex_Unlock (&(deviceManager->mutex));
 
                     avpicture_layout(
                         (AVPicture*)avFrame, 
@@ -457,12 +378,11 @@ void* Decode_RunDataThread(void *customData)
 
                     // Final free
                     av_frame_free(&avFrame);
-                    av_frame_free(&av_frame_BGR);
                 }
 
                 if (decodedOut != NULL)
                 {
-                    fwrite(decodedOut, pic_size, 1, deviceManager->video_out);
+                    // fwrite(decodedOut, pic_size, 1, deviceManager->video_out);
                 }
 
                 free (decodedOut);
@@ -487,11 +407,14 @@ static void *looperRun (void* data)
     {
         while (deviceManager->run)
         {
+            // ARSAL_Mutex_Lock (&(deviceManager->mutex));
+            refreshDeviceManager(deviceManager, img);
+            // ARSAL_Mutex_Unlock (&(deviceManager->mutex));
             sendPCMD(deviceManager);
 
             sendCameraOrientation(deviceManager);
 
-            usleep(10000);
+            usleep(50000);
         }
     }
 
@@ -562,9 +485,10 @@ int main (int argc, char *argv[])
         dup2(stderr_fd, STDERR_FILENO);
         close(stderr_fd);
 
-        execlp("mplayer", "mplayer", fifo_name, "-demuxer", "rawvideo", "-rawvideo", "w=640:h=368:fps=30:format=i420", ">/dev/null", "2>/dev/null", NULL);
-        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Missing mplayer, you will not see the video. Please install mplayer.");
-        return -1;
+        return 0;
+        // execlp("mplayer", "mplayer", fifo_name, "-demuxer", "rawvideo", "-rawvideo", "w=640:h=368:fps=30:format=i420", ">/dev/null", "2>/dev/null", NULL);
+        // ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Missing mplayer, you will not see the video. Please install mplayer.");
+        // return -1;
     }
 
     if (deviceManager == NULL)

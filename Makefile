@@ -1,8 +1,8 @@
 
 include gmsl
 
-CC := gcc
-CXX := g++
+CC := clang
+CXX := clang++ -Qunused-arguments
 CFLAGS := -Wall
 
 LIBRARIES := \
@@ -46,7 +46,7 @@ EXEC := bebop_track
 
 BIN_DIR := ./bin
 OBJ_DIR := ./obj
-OBJ := BebopDroneDecodeStream.o DecoderManager.o ihm.o
+OBJ := BebopUAVControl.o BebopDroneDecodeStream.o DecoderManager.o ihm.o
 OBJS := $(addprefix $(OBJ_DIR)/, $(OBJ))
 
 SRC_DIR := ./src
@@ -56,15 +56,15 @@ DEPS := $(wildcard $(INC_DIR)/*.h)
 all: obj bin $(BIN_DIR)/$(EXEC)
 
 $(BIN_DIR)/$(EXEC): $(OBJS)
-	@ echo "CXX $^ -o $@"
+	@ echo "CXX\t -o $^ $@"
 	@ $(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
-	@ echo "CC -c $< -o $@"
+	@ echo "CC\t -c $< -o $@"
 	@ $(CC) $(CFLAGS) -c $< -o $@ 
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(DEPS)
-	@ echo "CXX -c $< -o $@"
+	@ echo "CXX\t -c $< -o $@"
 	@ $(CXX) $(CFLAGS) -c $< -o $@ 
 
 obj: 
@@ -75,3 +75,4 @@ bin:
 
 clean: 
 	@ rm -rf $(OBJ_DIR) $(BIN_DIR)
+	@ rm -rf *.png *.log *.jpg
