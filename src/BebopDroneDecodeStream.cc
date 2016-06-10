@@ -412,14 +412,14 @@ void* Decode_RunDataThread(void *customData)
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNLEFT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = -10;
+                            deviceManager->dataPCMD.roll = -5;
                           }
                           break;
                         case OP_TURNRIGHT:
                           IHM_PrintInfo(deviceManager->ihm, (char *) "Next command : TURNRIGHT");
                           if(deviceManager != NULL) {
                             deviceManager->dataPCMD.flag = 1;
-                            deviceManager->dataPCMD.roll = 10;
+                            deviceManager->dataPCMD.roll = 5;
                           }
                           break;
                         case OP_UPWARD:
@@ -462,7 +462,7 @@ void* Decode_RunDataThread(void *customData)
 
                 if (decodedOut != NULL)
                 {
-                    fwrite(decodedOut, pic_size, 1, deviceManager->video_out);
+                    // fwrite(decodedOut, pic_size, 1, deviceManager->video_out);
                 }
 
                 free (decodedOut);
@@ -562,9 +562,10 @@ int main (int argc, char *argv[])
         dup2(stderr_fd, STDERR_FILENO);
         close(stderr_fd);
 
-        execlp("mplayer", "mplayer", fifo_name, "-demuxer", "rawvideo", "-rawvideo", "w=640:h=368:fps=30:format=i420", ">/dev/null", "2>/dev/null", NULL);
-        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Missing mplayer, you will not see the video. Please install mplayer.");
-        return -1;
+        return 0;
+        // execlp("mplayer", "mplayer", fifo_name, "-demuxer", "rawvideo", "-rawvideo", "w=640:h=368:fps=30:format=i420", ">/dev/null", "2>/dev/null", NULL);
+        // ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Missing mplayer, you will not see the video. Please install mplayer.");
+        // return -1;
     }
 
     if (deviceManager == NULL)
