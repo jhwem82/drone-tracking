@@ -1,11 +1,3 @@
-//
-//  Decoder_Manager.c
-//  
-//
-//  Created by Djavan Bertrand on 14/04/2015.
-//
-//
-
 #include "DecoderManager.h"
 
 #include <libavcodec/avcodec.h>
