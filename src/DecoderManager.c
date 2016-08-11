@@ -1,92 +1,54 @@
-//
-//  Decoder_Manager.c
-//  
-//
-//  Created by Djavan Bertrand on 14/04/2015.
-//
-//
-
 #include "DecoderManager.h"
-
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
-
 /** Handle older ffmpeg/libav versions */
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
 #define av_frame_alloc  avcodec_alloc_frame
 #define av_frame_free   avcodec_free_frame
 #endif
-
 #include <libARSAL/ARSAL_Print.h>
-
 /*****************************************
  *
  *             define :
  *
  *****************************************/
 #define ARCODECS_MANAGER_TAG    "ARCODECS_Manager"
-
 typedef struct _ARCODECS_Manager_FFMPEGDecoder_t_
-{
-    AVCodec *codec;
+{    AVCodec *codec;
     AVCodecContext *codecCtx;
     AVFrame *decodedFrame;
     AVPacket avpkt;
     uint8_t *outputData;
     int outputDataSize;
 } ARCODECS_Manager_FFMPEGDecoder_t;
-
 /**
  * @brief Video and audio codecs manager structure allow to decode video and audio.
  */
 struct ARCODECS_Manager_t
-{
-    ARCODECS_Manager_GetNextDataCallback_t callback;
+{    ARCODECS_Manager_GetNextDataCallback_t callback;
     void *callbackCustomData;
     ARCODECS_Manager_FFMPEGDecoder_t *decoder;
     ARCODECS_Manager_Frame_t outputFrame;
 };
-
 /**
  * @brief define the components of the format RGBA (also valid for BGRA).
  */
 typedef enum
-{
-    ARCODECS_FORMAT_RGBA_COMPONENT = 0,
+{    ARCODECS_FORMAT_RGBA_COMPONENT = 0,
     ARCODECS_FORMAT_RGBA_COMPONENT_MAX,
 } eARCODECS_FORMAT_RGBA_COMPONENT;
-
 /**
  * @brief define the components of the format YUV
  */
 typedef enum
-{
-    ARCODECS_FORMAT_YUV_COMPONENT_Y = 0,
+{    ARCODECS_FORMAT_YUV_COMPONENT_Y = 0,
     ARCODECS_FORMAT_YUV_COMPONENT_U,
     ARCODECS_FORMAT_YUV_COMPONENT_V,
     ARCODECS_FORMAT_YUV_COMPONENT_MAX,
 } eARCODECS_FORMAT_YUV_COMPONENT;
-
-
-/**
- * @brief Initialize the OutputFrame
- * @param manager manager Decoder
- * @param[in] numberOfComponent nubmer of component of the output frame
- * @return error
- */
 eARCODECS_ERROR ARCODECS_Manager_InitOutputFrame (ARCODECS_Manager_t *manager, uint32_t numberOfComponent);
-
-/**
- * @brief Create a new FFMPEG decoder
- * @warning This function allocate memory
- * @post ARCODECS_Manager_DeleteFFMPEGDecoder() must be called to delete the codecs manager and free the memory allocated.
- * @param[out] error pointer on the error output.
- * @return Pointer on the new FFMPEG decoder
- * @see ARCODECS_Manager_DeleteFMPEGDecoder()
- */
 ARCODECS_Manager_FFMPEGDecoder_t *ARCODECS_Manager_NewFFMPEGDecoder (eARCODECS_ERROR *error);
-
 /**
  * @brief Delete the FFMPEG decoder
  * @warning This function free memory
@@ -94,7 +56,6 @@ ARCODECS_Manager_FFMPEGDecoder_t *ARCODECS_Manager_NewFFMPEGDecoder (eARCODECS_E
  * @see ARCODECS_Manager_NewFFMPEGDecoder()
  */
 void ARCODECS_Manager_DeleteFFMPEGDecoder (ARCODECS_Manager_FFMPEGDecoder_t **ffmpegDecoder);
-
 /**
  * @brief decode one frame with FFMPEG
  * @warning This function decode video with FFMPEG
@@ -105,16 +66,13 @@ void ARCODECS_Manager_DeleteFFMPEGDecoder (ARCODECS_Manager_FFMPEGDecoder_t **ff
  * @return error
  */
 eARCODECS_ERROR ARCODECS_Manager_FFMPEGDecode (ARCODECS_Manager_FFMPEGDecoder_t *ffmpegDecoder, uint8_t *data , int size, ARCODECS_Manager_Frame_t *outputFrame);
-
 /*****************************************
  *
  *             implementation :
  *
  *****************************************/
-
 ARCODECS_Manager_t* ARCODECS_Manager_New (ARCODECS_Manager_GetNextDataCallback_t callback, void *callbackCustomData, eARCODECS_ERROR *error)
-{
-    ARCODECS_Manager_t *manager = NULL;
+{    ARCODECS_Manager_t *manager = NULL;
     eARCODECS_ERROR err = ARCODECS_OK;
     
     /** Check parameters */
@@ -135,16 +93,16 @@ ARCODECS_Manager_t* ARCODECS_Manager_New (ARCODECS_Manager_GetNextDataCallback_t
     
     if(err == ARCODECS_OK)
     {
-        /** Initialize to default values */
+        /** 기본값으로 초기화 */
         manager->callback = callback;
         manager->callbackCustomData = callbackCustomData;
         
         ARCODECS_Manager_FFMPEGDecoder_t *ffmpegDecoder = NULL;
         
-        /* Allocate the component array of the outputFrame */
+        /* 출력 프레임의 구성 배열로 할당*/
         err = ARCODECS_Manager_InitOutputFrame (manager, ARCODECS_FORMAT_YUV_COMPONENT_MAX);
         
-        /* Initialize manager to decode H264 with FFMPEG decoder */
+        /*FFMPEG 디코더 H264을 디코딩하는 관리자 초기화 */
         if (err == ARCODECS_OK)
         {
             ffmpegDecoder = ARCODECS_Manager_NewFFMPEGDecoder (&err);
@@ -157,7 +115,7 @@ ARCODECS_Manager_t* ARCODECS_Manager_New (ARCODECS_Manager_GetNextDataCallback_t
         }
     }
     
-    /** delete the Manager if an error occurred */
+    /** 에러가 발생하면 관리자 삭제 */
     if (err != ARCODECS_OK)
     {
         ARSAL_PRINT (ARSAL_PRINT_ERROR, ARCODECS_MANAGER_TAG, "error: %i", err);
@@ -171,11 +129,8 @@ ARCODECS_Manager_t* ARCODECS_Manager_New (ARCODECS_Manager_GetNextDataCallback_t
     }
     
     return manager;
-}
-
-ARCODECS_Manager_Frame_t* ARCODECS_Manager_Decode(ARCODECS_Manager_t *manager, eARCODECS_ERROR *error)
-{
-    ARCODECS_Manager_Frame_t *outputFrame = NULL;
+}ARCODECS_Manager_Frame_t* ARCODECS_Manager_Decode(ARCODECS_Manager_t *manager, eARCODECS_ERROR *error)
+{    ARCODECS_Manager_Frame_t *outputFrame = NULL;
     eARCODECS_ERROR err = ARCODECS_OK;
     
     if(manager == NULL)
@@ -190,9 +145,8 @@ ARCODECS_Manager_Frame_t* ARCODECS_Manager_Decode(ARCODECS_Manager_t *manager, e
         uint8_t *data = NULL;
         int size = 0;
         
-        /* callback to get the frame to decode */
+        /* 콜백 디코딩 프레임 */
         size = manager->callback((&data), manager->callbackCustomData);
-
         outputFrame = &manager->outputFrame;
         error = ARCODECS_Manager_FFMPEGDecode (ffmpegDecoder, data, size, outputFrame);
     }
@@ -204,11 +158,8 @@ ARCODECS_Manager_Frame_t* ARCODECS_Manager_Decode(ARCODECS_Manager_t *manager, e
     }
     
     return outputFrame;
-}
-
-void ARCODECS_Manager_Delete(ARCODECS_Manager_t **manager)
-{
-    ARCODECS_Manager_t *managerPtr = NULL;
+}void ARCODECS_Manager_Delete(ARCODECS_Manager_t **manager)
+{    ARCODECS_Manager_t *managerPtr = NULL;
     
     if (manager)
     {
@@ -225,19 +176,13 @@ void ARCODECS_Manager_Delete(ARCODECS_Manager_t **manager)
         
         *manager = NULL;
     }
-}
-
-
-
-/*****************************************
+}/*****************************************
  *
- *             private implementation :
+ *  개발한 부분,  private implementation :
  *
  *****************************************/
-
 eARCODECS_ERROR ARCODECS_Manager_InitOutputFrame (ARCODECS_Manager_t *manager, uint32_t numberOfComponent)
-{
-    /* Initialize the OutputFrame */
+{    /* Initialize the OutputFrame */
     
     eARCODECS_ERROR error = ARCODECS_OK;
     
@@ -268,11 +213,8 @@ eARCODECS_ERROR ARCODECS_Manager_InitOutputFrame (ARCODECS_Manager_t *manager, u
     /* No else: skipped by an error */
     
     return error;
-}
-
-ARCODECS_Manager_FFMPEGDecoder_t *ARCODECS_Manager_NewFFMPEGDecoder (eARCODECS_ERROR *error)
-{
-    /* -- Create a new FFMPEG decoder -- */
+}ARCODECS_Manager_FFMPEGDecoder_t *ARCODECS_Manager_NewFFMPEGDecoder (eARCODECS_ERROR *error)
+{    /* -- Create a new FFMPEG decoder -- */
     ARCODECS_Manager_FFMPEGDecoder_t *ffmpegDecoder = NULL;
     eARCODECS_ERROR localError = ARCODECS_OK;
     
@@ -353,11 +295,8 @@ ARCODECS_Manager_FFMPEGDecoder_t *ARCODECS_Manager_NewFFMPEGDecoder (eARCODECS_E
     /* No else: the error is not returned */
     
     return ffmpegDecoder;
-}
-
-void ARCODECS_Manager_DeleteFFMPEGDecoder (ARCODECS_Manager_FFMPEGDecoder_t **ffmpegDecoder)
-{
-    /* -- Delete the FFMPEG decoder -- */
+}void ARCODECS_Manager_DeleteFFMPEGDecoder (ARCODECS_Manager_FFMPEGDecoder_t **ffmpegDecoder)
+{    /* -- Delete the FFMPEG decoder -- */
     
     if(ffmpegDecoder != NULL)
     {
@@ -394,11 +333,8 @@ void ARCODECS_Manager_DeleteFFMPEGDecoder (ARCODECS_Manager_FFMPEGDecoder_t **ff
         /* No else: check parameters ; stops the processing */
     }
     /* No else: check parameters ; stops the processing */
-}
-
-eARCODECS_ERROR ARCODECS_Manager_FFMPEGDecode (ARCODECS_Manager_FFMPEGDecoder_t *ffmpegDecoder, uint8_t *data , int size, ARCODECS_Manager_Frame_t *outputFrame)
-{
-    /* -- Decode one frame with FFMPEG -- */
+}eARCODECS_ERROR ARCODECS_Manager_FFMPEGDecode (ARCODECS_Manager_FFMPEGDecoder_t *ffmpegDecoder, uint8_t *data , int size, ARCODECS_Manager_Frame_t *outputFrame)
+{    /* -- Decode one frame with FFMPEG -- */
     int frameFinished = 0;
     int len = 0;
     eARCODECS_ERROR error = ARCODECS_OK;
